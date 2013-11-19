@@ -527,6 +527,27 @@ static int print_event(struct nl_msg *msg, void *arg)
 		       (unsigned long long)nla_get_u64(tb[NL80211_ATTR_COOKIE]),
 		       tb[NL80211_ATTR_ACK] ? "acked" : "no ack");
 		break;
+	case NL80211_CMD_RADAR_DETECT:
+		printf("Channel Availabilty Check (CAC) on freq %d\n",
+		       nla_get_u32(tb[NL80211_ATTR_WIPHY_FREQ]));
+
+		switch (nla_get_u32(tb[NL80211_ATTR_RADAR_EVENT])) {
+		case NL80211_RADAR_DETECTED:
+			printf("Radar detect: channel unusable\n");
+			break;
+		case NL80211_RADAR_CAC_FINISHED:
+			printf("Radar not detect: channel available\n");
+			break;
+		case NL80211_RADAR_CAC_ABORTED:
+			printf("CAC aborted\n");
+			break;
+		case NL80211_RADAR_NOP_FINISHED:
+			printf("Non-Occupancy Period over: channel available\n");
+			break;
+		default:
+			break;
+		}
+		break;
 	default:
 		printf("unknown event %d\n", gnlh->cmd);
 		break;

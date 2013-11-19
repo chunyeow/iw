@@ -583,3 +583,51 @@ nla_put_failure:
 COMMAND(mesh, chswitch, "<new channel> <count in TBTT> [HT20|HT40+|HT40-]",
 	NL80211_CMD_CHANNEL_SWITCH, 0, CIB_NETDEV, trigger_mesh_chswitch,
 	"Trigger the CSA action frame and switch to a new operating channel.");
+
+static int trigger_mesh_cac(struct nl80211_state *state, struct nl_cb *cb,
+			    struct nl_msg *msg, int argc, char **argv,
+			    enum id_input id)
+{
+	static const struct {
+		const char *name;
+		unsigned int val;
+	} htmap[] = {
+		{ .name = "HT20", .val = NL80211_CHAN_HT20, },
+		{ .name = "HT40+", .val = NL80211_CHAN_HT40PLUS, },
+		{ .name = "HT40-", .val = NL80211_CHAN_HT40MINUS, },
+	};
+	unsigned int htval = NL80211_CHAN_NO_HT;
+	enum nl80211_band band;
+	unsigned int channel;
+	int i;
+	char *end;
+
+	if (argc < 1)
+		return 1;
+
+	channel = strtoul(argv[0], &end, 10);
+	argc--;
+	argv++;
+
+	band = channel <= 14 ? NL80211_BAND_2GHZ : NL80211_BAND_5GHZ;
+	channel = ieee80211_channel_to_frequency(channel, band);
+
+	NLA_PUT_U32(msg, NL80211_ATTR_WIPHY_FREQ, channel);
+
+	for (i = 0; i < ARRAY_SIZE(htmap); i++) {
+		if (strcasecmp(htmap[i].name, argv[0]) == 0) {
+			htval = htmap[i].val;
+			break;
+		}
+	}
+
+	NLA_PUT_U32(msg, NL80211_ATTR_WIPHY_CHANNEL_TYPE, htval);
+
+	return 0;
+
+nla_put_failure:
+	return -ENOBUFS;
+}
+COMMAND(mesh, radar_detect, "<channel> <HT20|HT40+|HT40->",
+	NL80211_CMD_RADAR_DETECT, 0, CIB_NETDEV, trigger_mesh_cac,
+	"Trigger CAC for radar detection.");
