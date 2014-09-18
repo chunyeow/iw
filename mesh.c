@@ -487,6 +487,23 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 		argc--;
 	}
 
+	if (argc > 1 && strcmp(argv[0], "hidden") == 0) {
+		argc--;
+		argv++;
+
+		if (strcmp(argv[0], "on") == 0)
+			NLA_PUT_U32(msg, NL80211_ATTR_HIDDEN_SSID,
+				    NL80211_HIDDEN_SSID_ZERO_LEN);
+		else if (strcmp(argv[0], "off") == 0)
+			NLA_PUT_U32(msg, NL80211_ATTR_HIDDEN_SSID,
+				    NL80211_HIDDEN_SSID_NOT_IN_USE);
+		else
+			return 1;
+
+		argv++;
+		argc--;
+	}
+
 	container = nla_nest_start(msg, NL80211_ATTR_MESH_SETUP);
 	if (!container)
 		return -ENOBUFS;
@@ -514,7 +531,7 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 	return -ENOBUFS;
 }
 COMMAND(mesh, join, "<mesh ID> [mcast-rate <rate in Mbps>]"
-	" [beacon-interval <time in TUs>] [dtim-period <value>]"
+	" [beacon-interval <time in TUs>] [dtim-period <value>] [hidden <on|off>]"
 	" [vendor_sync on|off] [<param>=<value>]*",
 	NL80211_CMD_JOIN_MESH, 0, CIB_NETDEV, join_mesh,
 	"Join a mesh with the given mesh ID with mcast-rate and mesh parameters.");
